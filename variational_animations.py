@@ -128,7 +128,7 @@ def animate_Z():
     ani.save('Z.gif', writer=w)
 
 
-def animate_fit():
+def animate_fit(plot_Z=False):
     m.kern.lengthscales = 1.0
     np.random.seed(0)
     m.q_mu = np.random.randn(M, 1)
@@ -138,19 +138,21 @@ def animate_fit():
 
     fig, ax = plt.subplots(1, 1)
     samples_lines = ax.plot(x_test, white_samples, "C0", lw=1)
-    data_line, = ax.plot(x, y, 'C1x', mew=2, ms=6)
+    data_line, = ax.plot(x, y, 'kx', mew=2, ms=6)
     data_line.set_zorder(1e6)
     text = ax.text(0.99, 0.99, '', horizontalalignment='right', verticalalignment='top', transform=ax.transAxes, fontsize=18)
+    Z_line, = ax.plot(np.zeros(M), np.zeros(M)-2.6, 'C1|', mew=4, alpha=1.0*plot_Z)
 
     ax.set_xlim(0, 10)
     ax.set_ylim(-2.6, 2.6)
+
 
     opt = gpflow.train.AdamOptimizer(0.1)
     optimizer_tensor = opt.make_optimize_tensor(m)
     session = gpflow.get_default_session()
 
     def init():
-        return samples_lines + [data_line, text]
+        return samples_lines + [data_line, text, Z_line]
 
     def animate(i):
         [session.run(optimizer_tensor) for _ in range(1)]
@@ -159,13 +161,16 @@ def animate_fit():
         samples = np.dot(L, white_samples) + mean
         [l.set_data(x_test.flatten(), s) for l, s in zip(samples_lines, samples.T)]
         text.set_text('ELBO:{0:.2f}'.format(m.compute_log_likelihood()))
-        return samples_lines + [data_line, text]
+        Z_line.set_xdata(session.run(m.feature.Z.parameter_tensor).flatten())
+        print(session.run(m.feature.Z.parameter_tensor).flatten())
+        return samples_lines + [data_line, text, Z_line]
 
     ani = animation.FuncAnimation(
         fig, animate, init_func=init, interval=40, blit=True, save_count=500)
 
     w = animation.ImageMagickWriter(fps=25)
-    ani.save('fit.gif', writer=w)
+    # ani.save('fit.gif', writer=w)
+    return ani
 
 
 def animate_inference():
