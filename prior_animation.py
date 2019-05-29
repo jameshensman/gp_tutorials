@@ -51,4 +51,4 @@ ani = animation.FuncAnimation(
     fig, animate, init_func=init, interval=10, blit=True, save_count=300)
 
 w = animation.ImageMagickWriter(fps=25)
-ani.save('prior_samples.gif', writer=w)
+#ani.save('prior_samples.gif', writer=w)
